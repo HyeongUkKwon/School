@@ -98,6 +98,8 @@ def BER(x_pred, x_gt):
 
 def FER(x_pred, x_gt):
     return torch.mean(torch.any(x_pred != x_gt, dim=1).float()).item()
+###########################################################################
+#여기까지는 그냥 ECCT 코드에 필요한 부분 긁어옴
 
 def save_results(values, fer_values, ber_values, selected_channel, file_path="simulation_results.txt"):
     if selected_channel == "bsc":
@@ -107,6 +109,7 @@ def save_results(values, fer_values, ber_values, selected_channel, file_path="si
     with open(file_path, "w") as f:
         for val, fer, ber in zip(values, fer_values, ber_values):
             f.write(f"{label}: {val}, FER: {fer:.2e}, BER: {ber:.2e}\n")
+
 
 
 
@@ -157,7 +160,7 @@ def main():
                     y = bin_to_sign(x) + z
                     # 신호의 크기 계산
                     magnitude = torch.abs(y)
-                    # 신드롬 계산(지금 y값은 BPSK 변조된 값이니까 다시 변환해줘야함), 정답지이므로 변조된 신호에 대해서 역변조 후 pc_matrix와 곱해줘 신드롬값 계산
+                    # 신드롬 계산, 
                     syndrome = torch.matmul(sign_to_bin(torch.sign(y)).float(), pc_matrix.transpose(0, 1)) % 2
                     # syndrome값을 변환할껀데 이때 모델에서는 역변조 되지않은 값에 대해서 계산할 것이므로 정답지 또한 변조해줘야함함
                     syndrome = bin_to_sign(syndrome)
@@ -166,10 +169,9 @@ def main():
                     # 예측값을 다시 이진화
                     x_pred = sign_to_bin(torch.sign(z_pred * torch.sign(y)))
                     # frame error 계산
-
                     # 프레임 에러는 한 배치에서 하나라도 다르면 에러로 간주
                     batch_frame_errors = torch.sum(torch.any(x_pred != x, dim=1)).item()
-                    # 비트 에러는 각 비트에대해서 비교교
+                    # 비트 에러는 각 비트에대해서 비교
                     batch_bit_errors = torch.sum(x_pred != x).item()
                     error_count += batch_frame_errors
                     bit_error_count += batch_bit_errors
