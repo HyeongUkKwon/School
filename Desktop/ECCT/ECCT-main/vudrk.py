@@ -112,7 +112,7 @@ def main():
     codeword = torch.ones(1000, 31, dtype=int).to(device)
 
     code_rate = k / n
-    Eb_No_dB = list(range(4, 10, 1))
+    Eb_No_dB = list(range(0, 10, 1))
     noise_std = EbN0_to_std(Eb_No_dB, code_rate)
 
     bit_error_count = 0

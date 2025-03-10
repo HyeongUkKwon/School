@@ -112,8 +112,7 @@ def save_results(values, fer_values, ber_values, selected_channel, file_path="si
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    model = torch.load('100qjs', map_location=device).to(device)
+    model = torch.load('1000tnwjd', map_location=device,weights_only=False).to(device)
     model.eval()
 
     n, k = 31, 16
@@ -140,14 +139,14 @@ def main():
         noise_std = EbN0_to_std(Eb_No_dB, code_rate)
         i = 0
         for SIGMA in noise_std:
-            #몇회 돌렸는가가
+            #몇회 돌렸는가
             count = 0
             #그냥 에러 개수
             error_count = 0
-            #ber에 대해 계산할 때 쓸 것임임
+            #ber에 대해 계산할 때 쓸 것임
             bit_error_count = 0
             # 에러를 1000번까지 검출할때까지 동작작
-            while error_count < 100000:
+            while error_count < 100:
                 with torch.no_grad():
                     #코드워드 생성(무작위 난수값)
                     x = codeword
@@ -159,7 +158,7 @@ def main():
                     magnitude = torch.abs(y)
                     # 신드롬 계산(지금 y값은 BPSK 변조된 값이니까 다시 변환해줘야함), 정답지이므로 변조된 신호에 대해서 역변조 후 pc_matrix와 곱해줘 신드롬값 계산
                     syndrome = torch.matmul(sign_to_bin(torch.sign(y)).float(), pc_matrix.transpose(0, 1)) % 2
-                    # syndrome값을 변환할껀데 이때 모델에서는 역변조 되지않은 값에 대해서 계산할 것이므로 정답지 또한 변조해줘야함함
+                    # syndrome값을 변환할껀데 이때 모델에서는 역변조 되지않은 값에 대해서 계산할 것이므로 정답지 또한 변조해줘야함
                     syndrome = bin_to_sign(syndrome)
                     # 예측값 계산
                     z_pred = model(magnitude, syndrome)
@@ -267,6 +266,6 @@ def main():
 
 if __name__ == "__main__":
     values, fer_values, ber_values, selected_channel = main()
-    save_results(values, fer_values, ber_values, selected_channel, file_path="100번.txt")
+    save_results(values, fer_values, ber_values, selected_channel, file_path="test.txt")
 
 

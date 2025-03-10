@@ -71,7 +71,7 @@ class ECC_Dataset(data.Dataset):
         if self.channel == "awgn":
             # AWGN 채널: BPSK 변조 후 noise 추가
             chosen_sigma = random.choice(self.sigma)
-            z = torch.randn(self.code.n) * random.choice(self.sigma)
+            z = torch.randn(self.code.n) * chosen_sigma
             y = bin_to_sign(x) + z
             magnitude = torch.abs(y)
             syndrome = torch.matmul(sign_to_bin(torch.sign(y)).long(), self.pc_matrix) % 2
@@ -154,11 +154,9 @@ def train(model, device, train_loader, optimizer, epoch, LR, channel, params):
             sigma_avg = sigma_batch.mean().item()
             rate = code.k / code.n
             EbN0_val = std_to_EbN0(sigma_avg, rate)  # (# 수정)
-
-
-
         else:
             raise ValueError("지원하지 않는 채널 타입입니다.")
+        
         z_mul = (y * bin_to_sign(x))
         z_pred = model(magnitude.to(device), syndrome.to(device))
         
@@ -172,8 +170,6 @@ def train(model, device, train_loader, optimizer, epoch, LR, channel, params):
         fer = FER(x_pred, x.to(device))
 
         cum_loss += loss.item() * x.shape[0]
-        pdb.set_trace()
-        print(x.shape[0])
         cum_ber += ber * x.shape[0]
         cum_fer += fer * x.shape[0]
         cum_samples += x.shape[0]
@@ -344,45 +340,18 @@ def main(args):
         scheduler.step()
         if loss < best_loss:
             best_loss = loss
-            torch.save(model, os.path.join(args.path, 'best_model'))
-        if epoch % 50 == 0 or epoch in [1, args.epochs]:
+            torch.save(model, os.path.join(args.path, 'proto_model_awgn_1000'))
+        if epoch % 500 == 0 or epoch in [1, args.epochs]:
             test(model, device, test_dataloader_list, test_range, channel = args.channel)
     
 #################################
-# # 성능 지표를 시각화하고 저장하는 함수
-# def plot_comparison_metrics(ebn0_range, ber_values_dict, fer_values_dict=None, save_path='comparison_performance_plot.png'):
-#     plt.figure(figsize=(14, 7))
-    
-#     # 각 코드에 대한 BER 그래프
-#     for code_type, ber_values in ber_values_dict.items():
-#         plt.plot(ebn0_range, ber_values, marker='o', linestyle='-', label=f'BER - {code_type}')
-    
-#     # 각 코드에 대한 FER 그래프가 있는 경우 함께 표시
-#     if fer_values_dict is not None:
-#         for code_type, fer_values in fer_values_dict.items():
-#             plt.plot(ebn0_range, fer_values, marker='s', linestyle='--', label=f'FER - {code_type}')
-    
-#     # 축 설정
-#     plt.xscale('linear')  # x축은 일반 선형 축
-#     plt.yscale('log')     # y축은 로그 축 (BER/FER는 보통 로그 축으로 표현)
-    
-#     plt.xlabel('Eb/N0 (dB)')
-#     plt.ylabel('Error Rate')
-#     plt.title('Comparison of Error Performance for LDPC, Polar, and BCH Codes')
-#     plt.grid(True, which="both", linestyle='--', linewidth=0.5)
-#     plt.legend()
-    
-#     # 그래프 저장
-#     plt.savefig(save_path)
-#     print(f'Comparison performance plot saved at: {save_path}')
-#     plt.show()
 # ##################################################################################################################
 # ##################################################################################################################
 ##################################################################################################################
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch ECCT')
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--gpus', type=str, default='-1', help='gpus ids')
